@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Štítkovač</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: jedna úzká „telefonní“ kolona pro studenty, široká mřížka pro zeď třídy.
+   Štítky vypadají jako ražená páska ze štítkovače (Dymo): barva pásky = kategorie. */
+:root{
+  --bg:#E4E9ED; --surface:#FFFFFF; --soft:#EEF2F5; --ink:#15191D; --muted:#56616B; --line:#CAD3DA;
+  --accent:#C3262C; --pin:#1E5DA6; --on-pin:#FFFFFF; --btn:#15191D; --btn-fg:#FFFFFF; --ok:#2A7A4C;
+  --tape-black:#1C1D20; --tape-red:#C3262C; --tape-blue:#1E5DA6; --tape-green:#2A7A4C; --tape-yellow:#E6B521;
+  --tape-fg:#F5F6F7; --tape-fg-yellow:#1C1D20; --tape-edge:rgba(255,255,255,0);
+  --shadow:0 1px 2px rgba(20,32,44,.08),0 10px 28px rgba(20,32,44,.10);
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-tape:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111519; --surface:#1B2127; --soft:#232A31; --ink:#E7EBEE; --muted:#9AA5AF; --line:#2F3841;
+  --accent:#E5484E; --pin:#6AA5EC; --on-pin:#111519; --btn:#E7EBEE; --btn-fg:#111519; --ok:#4FB37A;
+  --tape-edge:rgba(255,255,255,.16); --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111519; --surface:#1B2127; --soft:#232A31; --ink:#E7EBEE; --muted:#9AA5AF; --line:#2F3841;
+  --accent:#E5484E; --pin:#6AA5EC; --on-pin:#111519; --btn:#E7EBEE; --btn-fg:#111519; --ok:#4FB37A;
+  --tape-edge:rgba(255,255,255,.16); --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:0 96px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pin);outline-offset:2px}
+.wrap{max-width:560px;margin-inline:auto;display:flex;flex-direction:column;gap:20px;padding-block:24px 0}
+.wrap.wide{max-width:1180px}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.eyebrow{font-family:var(--f-tape);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:.8rem;color:var(--muted)}
+
+/* páska */
+.tape{display:inline-flex;align-items:center;gap:.4em;font-family:var(--f-tape);font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:.95rem;line-height:1;padding:.46em .85em .4em;color:var(--tape-fg);background:var(--tape-black);border:0;border-radius:2px;
+  clip-path:polygon(0 0,100% 0,calc(100% - 4px) 50%,100% 100%,0 100%,4px 50%);
+  box-shadow:inset 0 0 0 1px var(--tape-edge);text-shadow:0 1px 0 rgba(0,0,0,.35),0 -1px 0 rgba(255,255,255,.2);white-space:nowrap}
+.tape.t-red{background:var(--tape-red)} .tape.t-blue{background:var(--tape-blue)} .tape.t-green{background:var(--tape-green)}
+.tape.t-yellow{background:var(--tape-yellow);color:var(--tape-fg-yellow);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.tape.dim{opacity:.32}
+.tapes{display:flex;flex-wrap:wrap;gap:8px}
+
+/* tlačítka */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--btn);color:var(--btn-fg);font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.block{width:100%}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:.9rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row > .btn{flex:1 1 160px}
+
+/* úvod */
+.hero{display:flex;flex-direction:column;gap:14px;padding-top:20px}
+.hero h1{font-size:clamp(2.6rem,10vw,3.6rem);font-weight:800;letter-spacing:-.02em}
+.hero .tapes{transform:rotate(-2deg);margin-block:4px 8px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600}
+.field input{min-height:52px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-family:var(--f-tape);font-weight:700;font-size:1.3rem;letter-spacing:.1em;text-transform:uppercase}
+.banner{background:var(--soft);border-radius:12px;padding:12px 14px;font-size:.9rem;color:var(--muted)}
+.banner strong{color:var(--ink)}
+.err{color:var(--accent);font-weight:600;font-size:.95rem}
+
+/* výběr */
+.cat{display:flex;flex-direction:column;gap:10px}
+.cat-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.cat-head h3{font-size:1.05rem}
+details.cat summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+details.cat summary::-webkit-details-marker{display:none}
+details.cat summary h3::after{content:" +";color:var(--muted)}
+details.cat[open] summary h3::after{content:" –"}
+.tape.chip{cursor:pointer;background:var(--soft);color:var(--ink);text-shadow:none;box-shadow:inset 0 0 0 1px var(--line);transition:transform .12s ease}
+.chip[aria-pressed="true"]{color:var(--tape-fg);text-shadow:0 1px 0 rgba(0,0,0,.35),0 -1px 0 rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px var(--tape-edge)}
+.chip[aria-pressed="true"].t-black{background:var(--tape-black)}
+.chip[aria-pressed="true"].t-red{background:var(--tape-red)}
+.chip[aria-pressed="true"].t-blue{background:var(--tape-blue)}
+.chip[aria-pressed="true"].t-green{background:var(--tape-green)}
+.chip[aria-pressed="true"].t-yellow{background:var(--tape-yellow);color:var(--tape-fg-yellow);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.chip:not(:disabled):active{transform:scale(.96)}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);box-shadow:0 -1px 0 var(--line),0 -8px 24px rgba(0,0,0,.06);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.bar-in{max-width:560px;margin-inline:auto;display:flex;align-items:center;gap:14px}
+.bar-in .grow{flex:1;min-width:0}
+.count{font-family:var(--f-tape);font-weight:700;font-size:1.5rem;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+
+/* karta profilu */
+.card{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:22px 20px 24px;display:flex;flex-direction:column;gap:16px;position:relative}
+.card .code{font-family:var(--f-tape);font-weight:700;font-size:2.1rem;letter-spacing:.06em;line-height:1}
+.card .tapes{gap:9px}
+.card.mini{padding:16px;gap:12px;border-radius:16px}
+.card.mini .code{font-size:1.35rem}
+.card.mini .tape{font-size:.82rem}
+.card.mine{box-shadow:var(--shadow),inset 0 0 0 2px var(--ink)}
+.ribbon{position:absolute;top:18px;right:16px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.ribbon span{font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--pin);color:var(--on-pin)}
+.ribbon span.least{background:var(--accent)}
+
+/* balíček */
+.deck{position:relative;min-height:340px;touch-action:pan-y}
+.deck .card{position:absolute;inset:0 0 auto 0;min-height:320px;user-select:none;-webkit-user-select:none}
+.deck .card.top{cursor:grab;z-index:2;transition:transform .22s ease,opacity .22s ease}
+.deck .card.top.dragging{transition:none;cursor:grabbing}
+.deck .card.under{z-index:1;transform:translateY(12px) scale(.96);opacity:.65}
+.deck .card.gone{transform:translateX(-120%) rotate(-10deg)!important;opacity:0}
+.deck-empty{background:var(--surface);border-radius:20px;padding:28px 20px;text-align:center;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;align-items:center}
+.hint{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mystrip{background:var(--soft);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.mystrip .tape{font-size:.8rem}
+.pinrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pinbtn{min-height:52px;border-radius:14px;border:0;cursor:pointer;font-weight:600;background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);padding:6px 10px;line-height:1.2}
+.pinbtn[aria-pressed="true"].most{background:var(--pin);color:var(--on-pin);box-shadow:none}
+.pinbtn[aria-pressed="true"].least{background:var(--accent);color:var(--on-pin);box-shadow:none}
+.picks{display:flex;flex-direction:column;gap:2px;font-size:.85rem;line-height:1.3}
+.picks b{font-family:var(--f-tape);letter-spacing:.06em;font-size:1rem}
+
+/* výsledek */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.compare > div{min-width:0}
+.score{font-family:var(--f-tape);font-weight:700;font-size:1.1rem;letter-spacing:.04em}
+.rank{display:flex;flex-direction:column;gap:8px}
+.rank-row{display:grid;grid-template-columns:7.5rem 2.6rem 1fr;gap:10px;align-items:center;background:var(--surface);border-radius:12px;padding:10px 12px}
+.rank-row .c{font-family:var(--f-tape);font-weight:700;letter-spacing:.05em}
+.rank-row .n{font-family:var(--f-tape);font-weight:700;font-size:1.3rem;text-align:center;font-variant-numeric:tabular-nums}
+.rank-row .tapes{gap:5px;min-width:0}
+.rank-row .tape{font-size:.72rem;padding:.4em .6em .35em}
+.rank-row.hl-most{box-shadow:inset 4px 0 0 var(--pin)}
+.rank-row.hl-least{box-shadow:inset 4px 0 0 var(--accent)}
+.questions{background:var(--surface);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.questions ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px}
+
+/* zeď */
+.wallhead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.wallhead h1{font-size:clamp(2rem,5vw,3rem);font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{background:var(--surface);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.stat .big{font-family:var(--f-tape);font-weight:700;font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.panel{background:var(--surface);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.freq{display:flex;flex-direction:column;gap:7px}
+.freq-row{display:grid;grid-template-columns:minmax(0,1fr) 2.2rem;gap:10px;align-items:center}
+.freq-row .tape{max-width:100%;justify-content:flex-start}
+.freq-row .n{font-family:var(--f-tape);font-weight:700;font-size:1.1rem;text-align:right;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:420px){.rank-row{grid-template-columns:6rem 2.2rem;}.rank-row .tapes{grid-column:1/-1}}
+</style>
+
+<!-- ÚVOD -->
+<section id="v-start" class="wrap">
+  <div class="hero">
+    <div class="tapes" aria-hidden="true"><span class="tape">kdo</span><span class="tape t-red">jsi</span><span class="tape t-blue">ve</span><span class="tape t-yellow">štítcích?</span></div>
+    <h1>Štítkovač</h1>
+    <p>Poskládej si anonymní profil jen ze štítků, které nabízí aplikace. Pak projdi profily spolužáků a najdi ten, který je tvému nejpodobnější, a ten, který je mu nejméně podobný.</p>
+  </div>
+  <div id="demo-banner" class="banner" hidden><strong>Zkušební režim.</strong> Aplikace není připojená k tabulce, takže ukazuje vymyšlené ukázkové profily a nic se nikam neodesílá.</div>
+  <form id="start-form" class="field" novalidate>
+    <label for="room">Kód třídy</label>
+    <input id="room" name="room" autocomplete="off" maxlength="20" placeholder="např. L1A" required>
+    <p class="muted small">Kód ti řekne vyučující. Všichni ve třídě musí zadat stejný.</p>
+    <p id="start-err" class="err" hidden></p>
+    <div class="row" style="margin-top:8px"><button class="btn" type="submit">Začít</button></div>
+  </form>
+  <button id="to-wall" class="linkbtn" type="button">Zeď třídy pro promítání</button>
+</section>
+
+<!-- VÝBĚR ŠTÍTKŮ -->
+<section id="v-pick" class="wrap" hidden>
+  <div class="hero" style="padding-top:0">
+    <span class="eyebrow" id="pick-room"></span>
+    <h2 style="font-size:1.9rem">Vyber přesně <span id="pick-n"></span> štítků, které tě vystihují</h2>
+    <p class="muted">Vlastní štítek napsat nejde. Vybírej jen z toho, co tu je.</p>
+  </div>
+  <div id="cats" style="display:flex;flex-direction:column;gap:26px"></div>
+</section>
+
+<!-- NÁHLED A MŮJ PROFIL -->
+<section id="v-me" class="wrap" hidden>
+  <span class="eyebrow" id="me-eyebrow">Takhle bude tvůj profil vypadat</span>
+  <div id="me-card"></div>
+  <p id="me-text" class="muted"></p>
+  <p id="me-err" class="err" hidden></p>
+  <div class="row" id="me-actions"></div>
+</section>
+
+<!-- PROCHÁZENÍ -->
+<section id="v-deck" class="wrap" hidden>
+  <div class="hint">
+    <span class="eyebrow" id="deck-pos"></span>
+    <div class="row" style="gap:14px"><button class="linkbtn" id="deck-refresh" type="button">Načíst nové</button><button class="linkbtn" id="deck-me" type="button">Můj profil</button></div>
+  </div>
+  <div class="mystrip"><span class="eyebrow">Tvoje štítky · <span id="my-code"></span></span><div class="tapes" id="my-tapes"></div></div>
+  <div id="deck" class="deck" aria-live="polite"></div>
+  <div class="pinrow">
+    <button class="pinbtn most" id="pin-most" type="button" aria-pressed="false">Tenhle je mi nejpodobnější</button>
+    <button class="pinbtn least" id="pin-least" type="button" aria-pressed="false">Tenhle je mi nejméně podobný</button>
+  </div>
+  <p class="muted small" style="text-align:center">Přejeď kartičkou doleva nebo klepni na Další. Svůj tip můžeš kdykoli změnit.</p>
+</section>
+
+<!-- VÝSLEDEK -->
+<section id="v-result" class="wrap" hidden>
+  <span class="eyebrow">Porovnání</span>
+  <h2 style="font-size:1.9rem">Tvůj tip a výpočet aplikace</h2>
+  <div id="result-body" style="display:flex;flex-direction:column;gap:20px"></div>
+  <div class="questions">
+    <h3 style="font-size:1.1rem">K zamyšlení</h3>
+    <ol>
+      <li>Shodl se tvůj tip s výpočtem? Podle čeho jsi vybíral(a) ty a podle čeho aplikace?</li>
+      <li>Kolik profilů s tebou nemá žádný společný štítek? Jsou ti všechny „stejně nepodobné“?</li>
+      <li>Který štítek ti v nabídce chyběl? A který jsi vybral(a), i když úplně nesedí?</li>
+      <li>Co se o člověku z profilu nedozvíš?</li>
+    </ol>
+  </div>
+  <div class="row"><button class="btn ghost" id="back-deck" type="button">Zpět k profilům</button></div>
+</section>
+
+<!-- ZEĎ TŘÍDY -->
+<section id="v-wall" class="wrap wide" hidden>
+  <div class="wallhead">
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="eyebrow" id="wall-room"></span><h1>Zeď třídy</h1></div>
+    <div class="row"><span class="muted small" id="wall-status"></span><button class="btn ghost" id="wall-back" type="button">Zavřít zeď</button></div>
+  </div>
+  <div class="stats" id="wall-stats"></div>
+  <div class="panels">
+    <div class="panel"><h3 style="font-size:1.1rem">Nejčastější štítky</h3><div class="freq" id="wall-freq"></div></div>
+    <div class="panel"><h3 style="font-size:1.1rem">Štítky, které nikdo nevybral</h3><div class="tapes" id="wall-unused"></div></div>
+  </div>
+  <h2 style="font-size:1.4rem">Všechny profily</h2>
+  <div class="grid" id="wall-grid"></div>
+</section>
+
+<!-- SPODNÍ LIŠTA -->
+<div class="bar" id="bar" hidden><div class="bar-in" id="bar-in"></div></div>
+
+<script>
+/* ===== NASTAVENÍ ===== */
+const API_URL = "";   // sem vlož adresu webové aplikace z Google Apps Script (končí na /exec); prázdné = zkušební režim
+const PICK = 8;       // kolik štítků si každý vybírá
+
+const CATS = [
+  { id:"povaha", name:"Povaha a nastavení", tape:"black", tags:[
+    "introvert","extrovert","ambivert","optimista","pesimista","realista","perfekcionista","chaotik",
+    "plánuju dopředu","spontánní","overthinker","prokrastinuju","ranní ptáče","noční sova",
+    "citlivý/á","racionální","emotivní","tvrdohlavý/á","soutěživý/á","zvědavý/á","klidná povaha","potřebuju být sám/sama" ]},
+  { id:"zajmy", name:"Zájmy a styl", tape:"red", tags:[
+    "dog person","cat person","gaming","anime","knihy","seriály","filmy","hudba","koncerty","festivaly",
+    "cestování","hory","příroda","sport","fitko","běhání","tanec","kreslení","focení","móda","second hand",
+    "vaření","pečení","kafe","matcha","K-pop","true crime","podcasty","hraju na nástroj","vegetarián/ka" ]},
+  { id:"net", name:"Z internetu", tape:"yellow", tags:[
+    "main character","NPC","sigma","pick-me","simp","nerd","tryhard","gym bro / gym girl","e-girl / e-boy","emo",
+    "basic","boomer","fangirl / fanboy","drama queen","hater","people pleaser","chronically online",
+    "green flag","trochu red flag","delulu","chill","mám rizz","mám brainrot" ]},
+  { id:"hodnoty", name:"Co je pro mě důležité", tape:"green", tags:[
+    "rodina","kamarádi","svoboda","upřímnost","humor","kariéra","vzdělání","víra","ekologie","spravedlnost","dobrodružství","klid" ]},
+  { id:"mbti", name:"Typ podle MBTI", tape:"blue", max:1, collapsed:true, tags:[
+    "INTJ","INTP","ENTJ","ENTP","INFJ","INFP","ENFJ","ENFP","ISTJ","ISFJ","ESTJ","ESFJ","ISTP","ISFP","ESTP","ESFP" ]},
+  { id:"znameni", name:"Znamení zvěrokruhu", tape:"blue", max:1, collapsed:true, tags:[
+    "Beran","Býk","Blíženci","Rak","Lev","Panna","Váhy","Štír","Střelec","Kozoroh","Vodnář","Ryby" ]}
+];
+const ANIMALS = ["LIŠKA","VYDRA","JEŽEK","LOS","RYS","KOS","ČÁP","HROCH","VLK","BOBR","ŽELVA","DATEL","KRAB","MORČE","PANDA","TUČŇÁK","VEVERKA","KAPR","MLOK","SRNA","ZUBR","KOALA","JEZEVEC","KACHNA","LAMA","SÝKORA","ŽABKA","PLAMEŇÁK"];
+
+/* ===== POMOCNÉ ===== */
+const $ = s => document.querySelector(s);
+const TAGCAT = {}; CATS.forEach(c => c.tags.forEach(t => TAGCAT[t] = c));
+const ALLTAGS = CATS.flatMap(c => c.tags);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const tapeHTML = (t, extra="") => `<span class="tape t-${(TAGCAT[t]||{tape:"black"}).tape} ${extra}">${esc(t)}</span>`;
+const sortTags = tags => tags.slice().sort((a,b) => ALLTAGS.indexOf(a) - ALLTAGS.indexOf(b));
+const shared = (a,b) => a.tags.filter(t => b.tags.includes(t));
+const ls = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function newCode(taken){
+  for(let i=0;i<200;i++){
+    const c = ANIMALS[Math.floor(Math.random()*ANIMALS.length)] + " " + String(10 + Math.floor(Math.random()*90));
+    if(!taken.has(c)) return c;
+  }
+  return "PROFIL " + Date.now().toString().slice(-4);
+}
+function plural(n, one, few, many){ return n===1 ? one : (n>=2 && n<=4 ? few : many); }
+
+/* ===== ÚLOŽIŠTĚ: Google tabulka, nebo zkušební režim ===== */
+const DEMO = !API_URL;
+let demoData = null;
+function demoSeed(){
+  // vymyšlené ukázkové profily; oblíbenější štítky mají vyšší váhu, aby se profily podobaly jako ve skutečné třídě
+  const popular = new Set(["introvert","overthinker","noční sova","hudba","seriály","kafe","kamarádi","humor","chill","dog person","cat person","prokrastinuju","cestování","filmy","upřímnost","nerd","gaming","chronically online"]);
+  let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+  const taken = new Set(); const out = [];
+  for(let p=0;p<22;p++){
+    const tags = []; const usedCat = {};
+    while(tags.length < PICK){
+      const pool = ALLTAGS.filter(t => !tags.includes(t) && !(TAGCAT[t].max && usedCat[TAGCAT[t].id]));
+      const w = pool.map(t => popular.has(t) ? 6 : (TAGCAT[t].max ? 0.35 : 1));
+      let r = rnd() * w.reduce((a,b)=>a+b,0), i = 0;
+      while(r > w[i]){ r -= w[i]; i++; }
+      tags.push(pool[i]); usedCat[TAGCAT[pool[i]].id] = true;
+    }
+    let code; do { code = ANIMALS[Math.floor(rnd()*ANIMALS.length)] + " " + (10+Math.floor(rnd()*90)); } while(taken.has(code));
+    taken.add(code); out.push({ code, tags, demo:true });
+  }
+  return out;
+}
+const store = {
+  async list(room){
+    if(DEMO){
+      if(!demoData) demoData = demoSeed();
+      const mine = ls.get("stitkovac:demo:" + room) || [];
+      return demoData.concat(mine);
+    }
+    const r = await fetch(API_URL + "?room=" + encodeURIComponent(room), { redirect:"follow" });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Načtení se nepovedlo.");
+    return (j.profiles || []).filter(p => p && p.code && Array.isArray(p.tags));
+  },
+  async add(room, profile){
+    if(DEMO){
+      const k = "stitkovac:demo:" + room; const mine = ls.get(k) || [];
+      mine.push(profile); ls.set(k, mine); return { ok:true };
+    }
+    const r = await fetch(API_URL, { method:"POST", redirect:"follow", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify({ room, code:profile.code, tags:profile.tags }) });
+    return await r.json();
+  }
+};
+
+/* ===== STAV ===== */
+const S = { room:"", selected:[], me:null, profiles:[], order:[], idx:0, picks:{ most:null, least:null } };
+const meKey = () => "stitkovac:me:" + S.room;
+const picksKey = () => "stitkovac:picks:" + S.room;
+
+function show(id){
+  document.querySelectorAll("section.wrap").forEach(s => s.hidden = s.id !== id);
+  $("#bar").hidden = !(id === "v-pick" || id === "v-deck");
+  window.scrollTo(0,0);
+  if(id !== "v-wall") stopWall();
+}
+
+/* ===== ÚVOD ===== */
+$("#demo-banner").hidden = !DEMO;
+(function prefill(){
+  let r = "";
+  try{ r = new URLSearchParams(location.search).get("trida") || ""; }catch(e){}
+  if(!r) r = (ls.get("stitkovac:lastRoom") || "");
+  $("#room").value = r;
+})();
+function readRoom(){
+  const r = $("#room").value.trim().toUpperCase().replace(/\s+/g,"").slice(0,20);
+  if(!r){ const e=$("#start-err"); e.textContent = "Zadej kód třídy, který ti řekl vyučující."; e.hidden = false; return null; }
+  $("#start-err").hidden = true; return r;
+}
+$("#start-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const r = readRoom(); if(!r) return;
+  S.room = r; ls.set("stitkovac:lastRoom", r);
+  S.me = ls.get(meKey());
+  S.picks = ls.get(picksKey()) || { most:null, least:null };
+  if(S.me && S.me.sent){ openDeck(); } else { S.selected = (S.me && S.me.tags) || []; openPick(); }
+});
+$("#to-wall").addEventListener("click", () => { const r = readRoom(); if(!r) return; S.room = r; ls.set("stitkovac:lastRoom", r); openWall(); });
+
+/* ===== VÝBĚR ===== */
+function openPick(){
+  $("#pick-room").textContent = "Třída " + S.room;
+  $("#pick-n").textContent = PICK;
+  renderCats(); renderPickBar(); show("v-pick");
+}
+function renderCats(){
+  const box = $("#cats"); box.innerHTML = "";
+  CATS.forEach(c => {
+    const chosen = S.selected.filter(t => TAGCAT[t] === c).length;
+    const el = document.createElement(c.collapsed ? "details" : "div");
+    el.className = "cat"; if(c.collapsed && chosen) el.open = true;
+    const head = `<h3>${esc(c.name)}</h3><span class="muted small">${c.max ? "nejvýš 1" : ""}</span>`;
+    el.innerHTML = c.collapsed ? `<summary>${head}</summary>` : `<div class="cat-head">${head}</div>`;
+    const wrap = document.createElement("div"); wrap.className = "tapes"; wrap.style.marginTop = c.collapsed ? "10px" : "0";
+    c.tags.forEach(t => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = `tape chip t-${c.tape}`; b.textContent = t;
+      b.setAttribute("aria-pressed", S.selected.includes(t) ? "true" : "false");
+      b.addEventListener("click", () => toggleTag(t));
+      wrap.appendChild(b);
+    });
+    el.appendChild(wrap); box.appendChild(el);
+  });
+  updateChipStates();
+}
+function toggleTag(t){
+  const i = S.selected.indexOf(t);
+  if(i >= 0) S.selected.splice(i,1);
+  else {
+    const c = TAGCAT[t];
+    if(c.max){ S.selected = S.selected.filter(x => TAGCAT[x] !== c); }
+    if(S.selected.length >= PICK) return;
+    S.selected.push(t);
+  }
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", S.selected.includes(b.textContent) ? "true" : "false"));
+  updateChipStates(); renderPickBar();
+}
+function updateChipStates(){
+  const full = S.selected.length >= PICK;
+  document.querySelectorAll(".chip").forEach(b => {
+    const t = b.textContent, c = TAGCAT[t];
+    const swappable = c.max && S.selected.some(x => TAGCAT[x] === c);
+    b.disabled = full && !S.selected.includes(t) && !swappable;
+  });
+}
+function renderPickBar(){
+  const n = S.selected.length;
+  $("#bar-in").innerHTML = `<div class="grow"><div class="count">${n} / ${PICK}</div><div class="muted small">${n < PICK ? "Vyber ještě " + (PICK-n) + " " + plural(PICK-n,"štítek","štítky","štítků") : "Hotovo, můžeš pokračovat"}</div></div><button class="btn" id="pick-next" type="button" ${n===PICK?"":"disabled"}>Ukázat profil</button>`;
+  $("#pick-next").addEventListener("click", () => { S.me = { code:(S.me && S.me.code) || null, tags: sortTags(S.selected), sent:false }; openPreview(); });
+}
+
+/* ===== NÁHLED / MŮJ PROFIL ===== */
+function cardHTML(p, opts={}){
+  const ribbons = [];
+  if(opts.pins){
+    if(S.picks.most === p.code) ribbons.push(`<span>tvůj tip: nejpodobnější</span>`);
+    if(S.picks.least === p.code) ribbons.push(`<span class="least">tvůj tip: nejméně podobný</span>`);
+  }
+  return `<div class="card ${opts.cls||""}" data-code="${esc(p.code||"")}">
+    ${ribbons.length ? `<div class="ribbon">${ribbons.join("")}</div>` : ""}
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="eyebrow">${esc(opts.label || "Profil")}</span><div class="code">${esc(p.code || "· · ·")}</div></div>
+    <div class="tapes">${sortTags(p.tags).map(t => tapeHTML(t)).join("")}</div>
+  </div>`;
+}
+function openPreview(){
+  $("#me-eyebrow").textContent = "Takhle bude tvůj profil vypadat";
+  $("#me-card").innerHTML = cardHTML({ code:null, tags:S.me.tags }, { label:"Tvůj profil", cls:"mine" });
+  $("#me-text").textContent = "Po zveřejnění ho uvidí všichni ve třídě. Jméno u něj nebude, jen náhodný kód.";
+  $("#me-err").hidden = true;
+  $("#me-actions").innerHTML = `<button class="btn ghost" id="me-edit" type="button">Upravit výběr</button><button class="btn" id="me-send" type="button">Zveřejnit profil</button>`;
+  $("#me-edit").addEventListener("click", openPick);
+  $("#me-send").addEventListener("click", sendProfile);
+  show("v-me");
+}
+async function sendProfile(){
+  const btn = $("#me-send"); btn.disabled = true; btn.textContent = "Odesílám…";
+  try{
+    let taken = new Set();
+    try{ taken = new Set((await store.list(S.room)).map(p => p.code)); }catch(e){}
+    let res = null;
+    for(let attempt=0; attempt<3; attempt++){
+      S.me.code = newCode(taken);
+      res = await store.add(S.room, { code:S.me.code, tags:S.me.tags });
+      if(res && res.ok) break;
+      if(res && res.error === "duplicate"){ taken.add(S.me.code); continue; }
+      throw new Error((res && res.error) || "Odeslání se nepovedlo.");
+    }
+    if(!res || !res.ok) throw new Error("Odeslání se nepovedlo.");
+    S.me.sent = true; ls.set(meKey(), S.me);
+    openMine(true);
+  }catch(err){
+    const e = $("#me-err"); e.textContent = "Profil se nepodařilo zveřejnit. Zkontroluj připojení k internetu a zkus to znovu."; e.hidden = false;
+    btn.disabled = false; btn.textContent = "Zkusit znovu";
+  }
+}
+function openMine(justSent){
+  $("#me-eyebrow").textContent = justSent ? "Profil je zveřejněný" : "Tvůj profil";
+  $("#me-card").innerHTML = cardHTML(S.me, { label:"Tvůj kód", cls:"mine" });
+  $("#me-text").textContent = "Zapamatuj si svůj kód. Podle něj se v diskusi poznáš, aniž bys musel(a) říct jméno.";
+  $("#me-err").hidden = true;
+  $("#me-actions").innerHTML = `<button class="btn" id="me-go" type="button">Prohlížet profily ostatních</button>`;
+  $("#me-go").addEventListener("click", openDeck);
+  show("v-me");
+}
+
+/* ===== PROCHÁZENÍ ===== */
+async function loadProfiles(keepPos){
+  const all = await store.list(S.room);
+  const others = all.filter(p => p.code !== S.me.code);
+  const known = new Set(S.order);
+  const fresh = shuffle(others.map(p => p.code).filter(c => !known.has(c)));
+  S.profiles = others;
+  S.order = (keepPos ? S.order.filter(c => others.some(p => p.code === c)) : []).concat(fresh);
+  if(!keepPos) S.idx = 0;
+  return fresh.length;
+}
+async function openDeck(){
+  $("#my-code").textContent = S.me.code;
+  $("#my-tapes").innerHTML = S.me.tags.map(t => tapeHTML(t)).join("");
+  show("v-deck"); renderDeckBar();
+  $("#deck").innerHTML = `<div class="deck-empty"><p class="muted">Načítám profily…</p></div>`;
+  try{ await loadProfiles(S.order.length > 0); renderDeck(); }
+  catch(e){ $("#deck").innerHTML = `<div class="deck-empty"><p class="err">Profily se nepodařilo načíst.</p><button class="btn ghost" type="button" onclick="openDeck()">Zkusit znovu</button></div>`; }
+}
+const current = () => S.profiles.find(p => p.code === S.order[S.idx]);
+function renderDeck(){
+  const deck = $("#deck");
+  const n = S.order.length;
+  if(!n){
+    deck.innerHTML = `<div class="deck-empty"><h3>Zatím tu nikdo jiný není</h3><p class="muted">Počkej, až spolužáci zveřejní své profily, a pak klepni na Načíst nové.</p></div>`;
+    $("#deck-pos").textContent = "0 profilů"; syncPins(); return;
+  }
+  S.idx = ((S.idx % n) + n) % n;
+  const top = current();
+  const under = n > 1 ? S.profiles.find(p => p.code === S.order[(S.idx+1) % n]) : null;
+  deck.innerHTML = (under ? cardHTML(under, { cls:"under", pins:true }) : "") + cardHTML(top, { cls:"top", pins:true });
+  $("#deck-pos").textContent = `Profil ${S.idx+1} z ${n}`;
+  bindSwipe(deck.querySelector(".card.top"));
+  syncPins();
+}
+function nextCard(){
+  const c = $("#deck .card.top"); if(!c || S.order.length < 2){ return; }
+  c.classList.remove("dragging"); c.classList.add("gone");
+  setTimeout(() => { S.idx++; renderDeck(); }, 200);
+}
+function bindSwipe(card){
+  if(!card) return;
+  let x0 = null, dx = 0;
+  card.addEventListener("pointerdown", e => { if(e.button && e.button !== 0) return; x0 = e.clientX; dx = 0; card.setPointerCapture(e.pointerId); card.classList.add("dragging"); });
+  card.addEventListener("pointermove", e => {
+    if(x0 === null) return;
+    const raw = e.clientX - x0; dx = raw < 0 ? raw : raw * 0.12;   // doprava jen pružně odolává: swajpuje se jen jedním směrem
+    card.style.transform = `translateX(${dx}px) rotate(${dx/24}deg)`;
+  });
+  const end = () => {
+    if(x0 === null) return; x0 = null; card.classList.remove("dragging");
+    if(dx < -90) nextCard(); else card.style.transform = "";
+  };
+  card.addEventListener("pointerup", end); card.addEventListener("pointercancel", end);
+}
+function syncPins(){
+  const c = current();
+  $("#pin-most").setAttribute("aria-pressed", c && S.picks.most === c.code ? "true" : "false");
+  $("#pin-least").setAttribute("aria-pressed", c && S.picks.least === c.code ? "true" : "false");
+  $("#pin-most").disabled = $("#pin-least").disabled = !c;
+  renderDeckBar();
+}
+function setPick(kind){
+  const c = current(); if(!c) return;
+  const other = kind === "most" ? "least" : "most";
+  S.picks[kind] = S.picks[kind] === c.code ? null : c.code;
+  if(S.picks[other] === c.code) S.picks[other] = null;
+  ls.set(picksKey(), S.picks);
+  renderDeck();
+}
+function renderDeckBar(){
+  const ready = S.picks.most && S.picks.least;
+  $("#bar-in").innerHTML = `<div class="grow picks">
+      <span>Podobný: <b>${S.picks.most ? esc(S.picks.most) : "—"}</b></span>
+      <span>Nepodobný: <b>${S.picks.least ? esc(S.picks.least) : "—"}</b></span>
+    </div>
+    <button class="btn ghost" id="deck-next" type="button" style="padding:0 16px">Další</button>
+    <button class="btn" id="deck-done" type="button" ${ready ? "" : "disabled"}>Porovnat</button>`;
+  $("#deck-next").addEventListener("click", nextCard);
+  $("#deck-done").addEventListener("click", openResult);
+}
+$("#pin-most").addEventListener("click", () => setPick("most"));
+$("#pin-least").addEventListener("click", () => setPick("least"));
+$("#deck-me").addEventListener("click", () => openMine(false));
+$("#deck-refresh").addEventListener("click", async () => {
+  const b = $("#deck-refresh"); b.textContent = "Načítám…";
+  try{ const n = await loadProfiles(true); renderDeck(); b.textContent = n ? `Přibylo ${n}` : "Nic nového"; }
+  catch(e){ b.textContent = "Nepovedlo se"; }
+  setTimeout(() => b.textContent = "Načíst nové", 2500);
+});
+document.addEventListener("keydown", e => { if(!$("#v-deck").hidden && (e.key === "ArrowLeft" || e.key === "ArrowRight")) nextCard(); });
+
+/* ===== VÝSLEDEK ===== */
+function openResult(){
+  const rows = S.profiles.map(p => ({ p, s: shared(S.me, p) })).sort((a,b) => b.s.length - a.s.length || a.p.code.localeCompare(b.p.code));
+  const max = rows.length ? rows[0].s.length : 0, min = rows.length ? rows[rows.length-1].s.length : 0;
+  const bestCodes = rows.filter(r => r.s.length === max).map(r => r.p.code);
+  const worstCodes = rows.filter(r => r.s.length === min).map(r => r.p.code);
+  const mostP = S.profiles.find(p => p.code === S.picks.most), leastP = S.profiles.find(p => p.code === S.picks.least);
+  const zero = rows.filter(r => r.s.length === 0).length;
+  const pickBlock = (title, p, ok) => p ? `<div><span class="eyebrow">${title}</span>${cardHTML(p,{cls:"mini",label:"Tvůj tip"})}<p class="score" style="margin-top:8px">${shared(S.me,p).length} ${plural(shared(S.me,p).length,"společný štítek","společné štítky","společných štítků")}</p><p class="small ${ok?"":"muted"}" style="color:${ok?"var(--ok)":""}">${ok ? "Shoduje se s výpočtem." : "Výpočet vybral jiný profil."}</p></div>` : "";
+  $("#result-body").innerHTML = `
+    <div class="compare">
+      ${pickBlock("Nejpodobnější", mostP, bestCodes.includes(S.picks.most))}
+      ${pickBlock("Nejméně podobný", leastP, worstCodes.includes(S.picks.least))}
+    </div>
+    <div class="banner">Aplikace počítá podobnost jednoduše: kolik štítků máte stejných. Nejvíc ${max}, nejméně ${min}.
+      ${bestCodes.length > 1 ? `Nejvyšší shodu má s tebou ${bestCodes.length} profilů zároveň.` : ""}
+      ${zero ? `S ${zero} ${plural(zero,"profilem","profily","profily")} nemáš žádný společný štítek.` : ""}</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <h3 style="font-size:1.1rem">Všechny profily podle počtu společných štítků</h3>
+      <div class="rank">${rows.map(r => `<div class="rank-row ${r.p.code===S.picks.most?"hl-most":""} ${r.p.code===S.picks.least?"hl-least":""}">
+          <span class="c">${esc(r.p.code)}</span><span class="n">${r.s.length}</span>
+          <div class="tapes">${r.s.length ? sortTags(r.s).map(t => tapeHTML(t)).join("") : `<span class="muted small">nic společného</span>`}</div></div>`).join("")}</div>
+    </div>`;
+  show("v-result");
+}
+$("#back-deck").addEventListener("click", () => { show("v-deck"); renderDeck(); });
+
+/* ===== ZEĎ TŘÍDY ===== */
+let wallTimer = null;
+function stopWall(){ if(wallTimer){ clearInterval(wallTimer); wallTimer = null; } }
+async function refreshWall(){
+  try{
+    const ps = await store.list(S.room);
+    renderWall(ps);
+    $("#wall-status").innerHTML = `<span class="pulse"></span>Aktualizováno ${new Date().toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`;
+  }catch(e){ $("#wall-status").textContent = "Načtení se nepovedlo, zkouším znovu…"; }
+}
+function openWall(){
+  $("#wall-room").textContent = "Třída " + S.room + (DEMO ? " · ukázková data" : "");
+  show("v-wall"); refreshWall(); stopWall(); wallTimer = setInterval(refreshWall, 8000);
+}
+function renderWall(ps){
+  const freq = {}; ps.forEach(p => p.tags.forEach(t => freq[t] = (freq[t]||0) + 1));
+  const top = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,12);
+  const unused = ALLTAGS.filter(t => !freq[t]);
+  let pairs = 0, pairs3 = 0, sum = 0;
+  for(let i=0;i<ps.length;i++) for(let j=i+1;j<ps.length;j++){ const s = shared(ps[i],ps[j]).length; pairs++; sum += s; if(s >= 3) pairs3++; }
+  const twins = {}; ps.forEach(p => { const k = sortTags(p.tags).join("|"); twins[k] = (twins[k]||0) + 1; });
+  const identical = Object.values(twins).filter(n => n > 1).reduce((a,b)=>a+b,0);
+  $("#wall-stats").innerHTML = [
+    [ps.length, plural(ps.length,"profil","profily","profilů")],
+    [pairs ? (sum/pairs).toFixed(1).replace(".",",") : "0", "společných štítků v průměru u dvojice"],
+    [pairs3, plural(pairs3,"dvojice má","dvojice mají","dvojic má") + " 3 a více společných štítků"],
+    [`${unused.length} z ${ALLTAGS.length}`, "štítků nikdo nevybral"]
+  ].map(([n,l]) => `<div class="stat"><span class="big">${n}</span><span class="muted small">${l}</span></div>`).join("")
+   + (identical ? `<div class="stat"><span class="big">${identical}</span><span class="muted small">profilů má přesně stejné štítky jako někdo jiný</span></div>` : "");
+  $("#wall-freq").innerHTML = top.length ? top.map(([t,n]) => `<div class="freq-row"><div>${tapeHTML(t)}</div><span class="n">${n}×</span></div>`).join("") : `<p class="muted">Zatím žádné profily.</p>`;
+  $("#wall-unused").innerHTML = unused.length ? unused.map(t => tapeHTML(t,"dim")).join("") : `<p class="muted">Každý štítek si někdo vybral.</p>`;
+  $("#wall-grid").innerHTML = ps.length ? ps.map(p => cardHTML(p, { cls:"mini" })).join("") : `<p class="muted">Až studenti zveřejní profily, objeví se tady.</p>`;
+}
+$("#wall-back").addEventListener("click", () => show("v-start"));
+</script>
+
+</body>
+</html>
