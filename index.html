@@ -251,27 +251,27 @@ details.cat[open] summary h3::after{content:" –"}
 
 <script>
 /* ===== NASTAVENÍ ===== */
-const API_URL = "https://script.google.com/macros/s/AKfycbxfZWVfUnpUAs3Y15ftT3qVKQi82mI4CbvgaBynRt-itLYblIkopdPCyiyiJ5ttAHLC/exec";   // sem vlož adresu webové aplikace z Google Apps Script (končí na /exec); prázdné = zkušební režim
+const API_URL = "";   // sem vlož adresu webové aplikace z Google Apps Script (končí na /exec); prázdné = zkušební režim
 const PICK = 8;       // kolik štítků si každý vybírá
 
 const CATS = [
   { id:"povaha", name:"Povaha a nastavení", tape:"black", tags:[
     "introvert","extrovert","ambivert","optimista","pesimista","realista","perfekcionista","chaotik",
     "plánuju dopředu","spontánní","overthinker","prokrastinuju","ranní ptáče","noční sova",
-    "citlivý/á","racionální","emotivní","tvrdohlavý/á","soutěživý/á","zvědavý/á","klidná povaha","potřebuju být sám/sama" ]},
+    "vysoce citlivý/á","stydlivý/á","lídr","racionální","emotivní","tvrdohlavý/á","soutěživý/á","zvědavý/á","klidná povaha","potřebuju být sám/sama" ]},
   { id:"zajmy", name:"Zájmy a styl", tape:"red", tags:[
     "dog person","cat person","gaming","anime","knihy","seriály","filmy","hudba","koncerty","festivaly",
     "cestování","hory","příroda","sport","fitko","běhání","tanec","kreslení","focení","móda","second hand",
-    "vaření","pečení","kafe","matcha","K-pop","true crime","podcasty","hraju na nástroj","vegetarián/ka" ]},
+    "vaření","pečení","kafe","matcha","K-pop","true crime","podcasty","hraju na nástroj","vegan/ka" ]},
   { id:"net", name:"Z internetu", tape:"yellow", tags:[
     "main character","NPC","sigma","pick-me","simp","nerd","tryhard","gym bro / gym girl","e-girl / e-boy","emo",
-    "basic","boomer","fangirl / fanboy","drama queen","hater","people pleaser","chronically online",
-    "green flag","trochu red flag","delulu","chill","mám rizz","mám brainrot" ]},
+    "basic","boomer","drama queen","people pleaser","chronically online","mom friend","girl's girl",
+    "emotionally unavailable","pasivně agresivní","green flag","trochu red flag","delulu","chill","mám rizz","brainrot" ]},
   { id:"hodnoty", name:"Co je pro mě důležité", tape:"green", tags:[
     "rodina","kamarádi","svoboda","upřímnost","humor","kariéra","vzdělání","víra","ekologie","spravedlnost","dobrodružství","klid" ]},
-  { id:"mbti", name:"Typ podle MBTI", tape:"blue", max:1, collapsed:true, tags:[
+  { id:"mbti", name:"Typ podle MBTI", tape:"blue", max:1, tags:[
     "INTJ","INTP","ENTJ","ENTP","INFJ","INFP","ENFJ","ENFP","ISTJ","ISFJ","ESTJ","ESFJ","ISTP","ISFP","ESTP","ESFP" ]},
-  { id:"znameni", name:"Znamení zvěrokruhu", tape:"blue", max:1, collapsed:true, tags:[
+  { id:"znameni", name:"Znamení zvěrokruhu", tape:"blue", max:1, tags:[
     "Beran","Býk","Blíženci","Rak","Lev","Panna","Váhy","Štír","Střelec","Kozoroh","Vodnář","Ryby" ]}
 ];
 const ANIMALS = ["LIŠKA","VYDRA","JEŽEK","LOS","RYS","KOS","ČÁP","HROCH","VLK","BOBR","ŽELVA","DATEL","KRAB","MORČE","PANDA","TUČŇÁK","VEVERKA","KAPR","MLOK","SRNA","ZUBR","KOALA","JEZEVEC","KACHNA","LAMA","SÝKORA","ŽABKA","PLAMEŇÁK"];
